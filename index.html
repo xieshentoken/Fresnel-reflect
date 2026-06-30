@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Fresnel Industrial · multilayer thin-film reflectance workbench">
+  <title>Fresnel Industrial · 薄膜反射率</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">INDUSTRIAL TRANSFER-MATRIX CONSOLE</p>
+      <h1>Fresnel<span>Lab</span></h1>
+    </div>
+    <div class="status"><span class="status-dot"></span><span id="statusText">READY</span></div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <p class="step-label">WORKFLOW</p>
+        <h2>Stack Design / RTA Scan / Dispersion-Aware Export</h2>
+      </div>
+      <div class="workflow"><span>[01] INPUT</span><i></i><span>[02] STACK</span><i></i><span>[03] CHART</span><i></i><span>[04] SCAN</span></div>
+    </section>
+
+    <section class="layout workbench-layout">
+      <section class="panel param-stack-panel">
+        <div class="panel-head">
+          <div><p class="step-label">01 / 参数</p><h3>入射与介质</h3></div>
+          <span class="badge" id="energyBadge">ENERGY OK</span>
+        </div>
+
+        <div class="panel-body">
+          <div class="grid two">
+            <label>波长 λ（nm）<input id="wavelength" type="number" min="0.0001" step="0.1" value="550"></label>
+            <label>入射角 θ（deg）<input id="thetaDeg" type="number" min="0" max="89.999" step="0.1" value="0"></label>
+            <label>入射 n₀<input id="nIn" type="number" min="0" step="0.001" value="1"></label>
+            <label>入射 k₀<input id="kIn" type="number" min="0" step="0.0001" value="0"></label>
+            <label>基板 nₛ<input id="nSub" type="number" min="0" step="0.001" value="1.5"></label>
+            <label>基板 kₛ<input id="kSub" type="number" min="0" step="0.0001" value="0"></label>
+          </div>
+
+          <label class="switch"><input id="splitPolarWavelength" type="checkbox"><span></span>高级：s/p 使用不同波长</label>
+          <div class="grid two hidden" id="polarWavelengths">
+            <label>λs（nm）<input id="lambdaS" type="number" min="0.0001" step="0.1" value="550"></label>
+            <label>λp（nm）<input id="lambdaP" type="number" min="0.0001" step="0.1" value="550"></label>
+          </div>
+        </div>
+
+        <div class="panel-head compact subpanel-head"><div><p class="step-label">STACK</p><h3>截面示意</h3></div></div>
+        <div class="stack-wrap"><canvas id="stackCanvas" width="620" height="260"></canvas></div>
+      </section>
+
+      <section class="panel stack-editor-panel">
+        <div class="panel-head">
+          <div><p class="step-label">02 / STACK</p><h3>膜层结构</h3></div>
+        </div>
+
+        <div class="panel-body">
+          <div class="toolbar">
+            <label>材料<select id="materialPicker"></select></label>
+            <button id="addMaterial" class="primary" type="button">添加膜层</button>
+            <button id="addCustom" class="ghost" type="button">自定义</button>
+          </div>
+          <div class="material-db">
+            <div class="material-db-head">
+              <span>LOCAL MATERIAL DB</span>
+              <output id="materialDbCount">0 MATERIALS</output>
+            </div>
+            <div class="grid four">
+              <label>名称<input id="dbMatName" type="text" placeholder="e.g. MyFilm"></label>
+              <label>分类<input id="dbMatCategory" type="text" value="User"></label>
+              <label>n<input id="dbMatN" type="number" min="0.0001" step="0.0001" value="1.5"></label>
+              <label>k<input id="dbMatK" type="number" min="0" step="0.0001" value="0"></label>
+            </div>
+            <details class="db-details">
+              <summary>可选：Cauchy 色散 n = A + B/λ² + C/λ⁴，λ 单位 μm</summary>
+              <div class="grid three">
+                <label>A<input id="dbMatA" type="number" step="0.000001" placeholder="empty"></label>
+                <label>B<input id="dbMatB" type="number" step="0.000001" placeholder="empty"></label>
+                <label>C<input id="dbMatC" type="number" step="0.000001" placeholder="empty"></label>
+              </div>
+            </details>
+            <div class="button-grid material-actions">
+              <button id="addMaterialToDb" class="primary" type="button">加入材料库</button>
+              <label class="file-button">导入材料库<input id="importMaterialDb" type="file" accept=".json,.csv,text/csv,application/json"></label>
+              <button id="exportMaterialDb" class="ghost" type="button">导出材料库</button>
+              <button id="clearCustomMaterials" class="ghost" type="button">清空自定义</button>
+            </div>
+            <div class="hint mini" id="materialDbHint">支持 JSON 或 CSV：name, category, n, k, A, B, C。自定义材料保存在浏览器 localStorage。</div>
+          </div>
+          <div class="layer-table" id="layerTable"></div>
+        </div>
+      </section>
+
+      <article class="panel chart-panel">
+        <div class="panel-head">
+          <div><p class="step-label">03 / 图表</p><h3 id="chartTitle">Reflectance / Transmittance</h3></div>
+          <span class="badge active" id="pointCount">0 PTS</span>
+        </div>
+        <div class="chart-wrap"><canvas id="chartCanvas" width="980" height="520"></canvas></div>
+        <div class="chart-tools">
+          <button id="chartZoomSelect" type="button">局部放大</button>
+          <button id="chartResetView" class="ghost" type="button">恢复视图</button>
+          <output id="chartReadout">HOVER LINE FOR X/Y</output>
+        </div>
+      </article>
+
+      <section class="right-bottom-panel">
+        <article class="panel scan-panel">
+          <div class="panel-head">
+            <div><p class="step-label">04 / SCAN</p><h3>扫描设置</h3></div>
+          </div>
+          <div class="panel-body">
+            <div class="grid three">
+              <label>λ 起点<input id="scanLamStart" type="number" value="380" step="1"></label>
+              <label>λ 终点<input id="scanLamEnd" type="number" value="780" step="1"></label>
+              <label>λ 步长<input id="scanLamStep" type="number" value="2" step="0.1"></label>
+              <label>膜层<select id="scanLayer"></select></label>
+              <label>d 起点<input id="scanDStart" type="number" value="0" step="1"></label>
+              <label>d 终点<input id="scanDEnd" type="number" value="300" step="1"></label>
+              <label>d 步长<input id="scanDStep" type="number" value="1" step="0.1"></label>
+              <label>θ 起点<input id="scanThetaStart" type="number" value="0" step="0.1"></label>
+              <label>θ 终点<input id="scanThetaEnd" type="number" value="85" step="0.1"></label>
+              <label>θ 步长<input id="scanThetaStep" type="number" value="0.5" step="0.1"></label>
+            </div>
+
+            <div class="button-grid">
+              <button id="singleCalc" class="primary" type="button">计算单点</button>
+              <button id="wavelengthScan" type="button">波长扫描</button>
+              <button id="thicknessScan" type="button">膜厚扫描</button>
+              <button id="angleScan" type="button">角度扫描</button>
+            </div>
+
+            <div class="button-grid">
+              <button id="saveConfig" class="ghost" type="button">保存 JSON</button>
+              <label class="file-button">打开 JSON<input id="loadConfig" type="file" accept=".json,application/json"></label>
+              <button id="exportCsv" class="ghost" type="button" disabled>导出 CSV</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel rta-panel">
+          <div class="panel-head compact"><div><p class="step-label">RTA</p><h3>单点结果</h3></div></div>
+          <div class="result-cards" id="resultCards"></div>
+          <div class="hint" id="validationText">参数有效性等待计算。</div>
+        </article>
+      </section>
+    </section>
+  </main>
+
+  <footer>Fresnel Industrial · 本机离线计算 · TMM core isolated in core.js</footer>
+  <div class="toast" id="toast"></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
